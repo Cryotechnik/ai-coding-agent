@@ -11,7 +11,7 @@ def get_files_info(working_directory, directory="."):
             raise ValueError(f"Cannot list '{directory}' as it is outside the permitted working directory")
 
         if not os.path.isdir(target_directory):
-            raise Exception(f"'{directory}' is not a directory")
+            raise ValueError(f"'{directory}' is not a directory")
         
         for item in os.listdir(target_directory):
             item_path = os.path.join(target_directory, item)
