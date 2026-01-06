@@ -1,11 +1,11 @@
-import os
 import argparse
+import os
 
+from config import AGENT_LOOP_LIMIT, SYSTEM_PROMPT, MODEL
+from dotenv import load_dotenv # type: ignore
+from functions.call_funcs import available_functions, call_function
 from google import genai
 from google.genai import types # type: ignore
-from dotenv import load_dotenv # type: ignore
-from config import SYSTEM_PROMPT
-from functions.call_funcs import available_functions, call_function
 
 
 def parse_args():
@@ -21,7 +21,7 @@ def build_messages(user_prompt):
 
 def generate_response(client, messages):
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=MODEL,
         contents=messages,
         config=types.GenerateContentConfig(tools=[available_functions], system_instruction=SYSTEM_PROMPT),
     )
@@ -32,18 +32,32 @@ def generate_response(client, messages):
     return response
 
 
-def verbose_handler(response, user_prompt):
-    print(f"User prompt: {user_prompt}")
+def extract_function_response_part(function_call_result: types.Content):
+    if not function_call_result.parts:
+        raise ValueError("No parts in function call result")
+
+    part = function_call_result.parts[0]
+
+    if not part.function_response:
+        raise ValueError("Missing function_response on first part")
+
+    if not part.function_response.response:
+        raise ValueError("Missing response content in function_response")
+
+    return part
+
+
+def verbose_handler(response):
+    if not response.usage_metadata:
+        return
     print("------------------------------")
     print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
     print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-    print("------------------------------")
 
 
 def main():
     args = parse_args()
     messages = build_messages(args.user_prompt)
-    function_call_responses= []
 
     load_dotenv()
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -52,37 +66,43 @@ def main():
 
     client = genai.Client(api_key=api_key)
 
-    response = generate_response(client, messages)
+    for _ in range(AGENT_LOOP_LIMIT):
 
-    if response.function_calls:
-        for func_call in response.function_calls:
-            if (
-                func_call.name == "get_files_info"
-                and func_call.args is not None
-                and "directory" not in func_call.args
-            ):
-                func_call.args["directory"] = "."
-            
-            function_call_result = call_function(func_call, verbose=args.verbose)
-            if not function_call_result.parts:
-                raise Exception("No parts list in function call result.")
-            if not function_call_result.parts[0].function_response:
-                raise Exception("No response in function call result of parts list.")
-            if not function_call_result.parts[0].function_response.response:
-                raise Exception("No content in response of function call result.")
-            
-            function_call_responses.append(function_call_result.parts[0])
-            
-            if args.verbose:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
+        response = generate_response(client, messages)
 
-    else:
-        print("------------------------------")
-        if args.verbose is True: 
-            verbose_handler(response, args.user_prompt)
-        print(f"Response text: {response.text}")
-        print("------------------------------")
+        candidates = response.candidates or []
+        for candidate in candidates:
+            messages.append(candidate.content)
 
+        function_call_responses = []
+
+        if response.function_calls:
+            for func_call in response.function_calls:
+                if func_call.name == "get_files_info":
+                    func_args = func_call.args or {}
+                    func_args.setdefault("directory", ".")
+                    func_call.args = func_args
+                
+                function_call_result = call_function(func_call, verbose=args.verbose)
+                
+                part = extract_function_response_part(function_call_result)
+                
+                function_call_responses.append(part)
+                
+                if args.verbose:
+                    print(f"-> {part.function_response.response}")
+
+            messages.append(types.Content(role="user", parts=function_call_responses))
+
+        else:
+            print("------------------------------")
+            print(f"Response text: {response.text}")
+            if args.verbose: 
+                verbose_handler(response)
+            print("------------------------------")
+            return
+        
+    raise RuntimeError("Reached agent loop limit without a final response.")
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,9 @@
+from config import WORKING_DIRECTORY
 from google.genai import types # type: ignore
-from .get_files_info import get_files_info, schema_get_files_info
 from .get_file_content import get_file_content, schema_get_file_content
-from .write_file import write_file, schema_write_file
+from .get_files_info import get_files_info, schema_get_files_info
 from .run_python_file import run_python_file, schema_run_python_file
+from .write_file import write_file, schema_write_file
 
 
 available_functions = types.Tool(
@@ -10,6 +11,7 @@ available_functions = types.Tool(
 )
 
 def call_function(function_call, verbose=False):
+    print("------------------------------")
     if verbose:
         print(f"Calling function: {function_call.name}({function_call.args})")
     else:
@@ -37,7 +39,7 @@ def call_function(function_call, verbose=False):
     
     args = dict(function_call.args) if function_call.args else {}
 
-    args["working_directory"] = "./calculator"
+    args["working_directory"] = WORKING_DIRECTORY
 
     function_result = function_map[function_name](**args)
 

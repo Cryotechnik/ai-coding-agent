@@ -1,5 +1,11 @@
 MAX_CHARS_LIMIT = 10000
 
+AGENT_LOOP_LIMIT = 20
+
+MODEL = "gemini-2.5-flash"
+
+WORKING_DIRECTORY = "./calculator"
+
 SYSTEM_PROMPT = """
 You are a helpful AI coding agent.
 
