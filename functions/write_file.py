@@ -1,7 +1,8 @@
 import os
-from google.genai import types # type: ignore
 
+from google.genai import types
 
+# Writes text to a file, automatically creating necessary parent directories.
 def write_file(working_directory, file_path, content):
     try:
         abs_working_directory = os.path.abspath(working_directory)
@@ -24,8 +25,8 @@ def write_file(working_directory, file_path, content):
     
     except Exception as e:
         return f"Error: {e}"
- 
-    
+
+# Defines the API schema for the file writing tool (path and content).
 schema_write_file = types.FunctionDeclaration(
     name="write_file",
     description="Writes content to a file in the working directory, creating directories as needed",

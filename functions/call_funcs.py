@@ -1,16 +1,16 @@
 from config import WORKING_DIRECTORY
-from google.genai import types # type: ignore
+from google.genai import types
 from .get_file_content import get_file_content, schema_get_file_content
 from .get_files_info import get_files_info, schema_get_files_info
 from .run_python_file import run_python_file, schema_run_python_file
 from .write_file import write_file, schema_write_file
 
-
 available_functions = types.Tool(
     function_declarations=[schema_get_files_info, schema_get_file_content, schema_write_file, schema_run_python_file],
 )
 
-def call_function(function_call, verbose=False):
+# Maps the API's function call request to a local tool and executes it.
+def call_function(function_call, verbose=False) -> google.genai.types.Content:
     print("------------------------------")
     if verbose:
         print(f"Calling function: {function_call.name}({function_call.args})")

@@ -1,8 +1,9 @@
 import os
-from google.genai import types # type: ignore
 
+from google.genai import types
 
-def get_files_info(working_directory, directory="."):
+# Lists file metadata (names, sizes, types) within a target directory.
+def get_files_info(working_directory, directory=".") -> str:
     try:
         abs_working_directory = os.path.abspath(working_directory)
         target_directory = os.path.normpath(os.path.join(abs_working_directory, directory))
@@ -26,7 +27,7 @@ def get_files_info(working_directory, directory="."):
     except Exception as e:
         return f"Error: {e}"
 
-   
+# Defines the API schema (name, description, parameters) so the model knows how to use this tool.
 schema_get_files_info = types.FunctionDeclaration(
     name="get_files_info",
     description="Lists files in a specified directory relative to the working directory, providing file size and directory status",

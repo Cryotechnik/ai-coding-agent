@@ -2,24 +2,24 @@ import argparse
 import os
 
 from config import AGENT_LOOP_LIMIT, SYSTEM_PROMPT, MODEL
-from dotenv import load_dotenv # type: ignore
+from dotenv import load_dotenv
 from functions.call_funcs import available_functions, call_function
 from google import genai
-from google.genai import types # type: ignore
+from google.genai import types
 
-
-def parse_args():
+# Parses command-line arguments (prompt and verbose flag)
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="AI Code Assistant using Gemini API")
     parser.add_argument("user_prompt", type=str, help="User prompt")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     return parser.parse_args()
 
-
-def build_messages(user_prompt):
+# Wraps the raw user string into the API's required Content object format.
+def build_messages(user_prompt) -> list[types.Content]:
     return [types.Content(role="user", parts=[types.Part(text=user_prompt)])]
 
-
-def generate_response(client, messages):
+# Calls the Gemini API with the current history, tools, and system prompt.
+def generate_response(client, messages) -> google.genai.types.GenerateContentResponse:
     response = client.models.generate_content(
         model=MODEL,
         contents=messages,
@@ -31,8 +31,8 @@ def generate_response(client, messages):
     
     return response
 
-
-def extract_function_response_part(function_call_result: types.Content):
+# Validates and extracts the specific output part from a tool execution result.
+def extract_function_response_part(function_call_result: types.Content) -> google.genai.types.Part:
     if not function_call_result.parts:
         raise ValueError("No parts in function call result")
 
@@ -46,16 +46,16 @@ def extract_function_response_part(function_call_result: types.Content):
 
     return part
 
-
-def verbose_handler(response):
+# Prints token usage statistics (prompt vs. candidate) to the console.
+def verbose_handler(response) -> None:
     if not response.usage_metadata:
         return
     print("------------------------------")
     print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
     print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
 
-
-def main():
+# Runs the main agent loop to process the user prompt and handle tool execution cycles.
+def main() -> None:
     args = parse_args()
     messages = build_messages(args.user_prompt)
 
@@ -103,6 +103,7 @@ def main():
             return
         
     raise RuntimeError("Reached agent loop limit without a final response.")
+
 
 if __name__ == "__main__":
     main()

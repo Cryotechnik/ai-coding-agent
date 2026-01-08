@@ -1,9 +1,10 @@
 import os
 import subprocess
-from google.genai import types # type: ignore
 
+from google.genai import types
 
-def run_python_file(working_directory, file_path, args=None):
+# Executes a local Python script in a subprocess and captures the stdout/stderr.
+def run_python_file(working_directory, file_path, args=None) -> str:
     try:
         abs_working_directory = os.path.abspath(working_directory)
         target_file_path = os.path.normpath(os.path.join(abs_working_directory, file_path))
@@ -40,7 +41,7 @@ def run_python_file(working_directory, file_path, args=None):
     except Exception as e:
         return f"Error: executing Python file: {e}"
 
-
+# Defines the API schema for the python execution tool (includes file path and CLI arguments).
 schema_run_python_file = types.FunctionDeclaration(
     name="run_python_file",
     description="Executes a Python file in the working directory and returns its output",

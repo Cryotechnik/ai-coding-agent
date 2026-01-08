@@ -1,10 +1,10 @@
 import os
-from google.genai import types # type: ignore
 
 from config import MAX_CHARS_LIMIT
+from google.genai import types
 
-
-def get_file_content(working_directory, file_path):
+# Reads file content up to a configured character limit, truncating if necessary.
+def get_file_content(working_directory, file_path) -> str:
     try:
         abs_working_directory = os.path.abspath(working_directory)
         target_file = os.path.normpath(os.path.join(abs_working_directory, file_path))
@@ -26,7 +26,7 @@ def get_file_content(working_directory, file_path):
     except Exception as e:
         return f"Error: {e}"
 
- 
+# Defines the API schema for the file reading tool.
 schema_get_file_content = types.FunctionDeclaration(
     name="get_file_content",
     description="Reads the content of a file in the working directory up to a specified character limit",
